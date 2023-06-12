@@ -70,16 +70,16 @@ app.post('/register', async (req, res) => {
 // Маршрут для авторизації користувача
 app.post('/login', async (req, res) => {
     const {username, password} = req.body;
-
     // Перевірка користувача в базі даних
     const db = req.dbClient.db('Authorizations');
-
+    const collection = db.collection('users');
+    const dbResponse = await collection.findOne({username:username});
+    const hashedPasswordFromDatabase = dbResponse ? dbResponse.hashedPassword : null;
+    const userId = dbResponse ? dbResponse._id : null;
     const isValidPassword = await verifyPassword(password, hashedPasswordFromDatabase); // Потрібно отримати хеш пароля з бази даних
-
     if (isValidPassword) {
         // Генерація JWT токена
         const token = generateToken(userId); // Потрібно отримати ID користувача з бази даних
-
         res.json({token});
     } else {
         res.status(401).send('Invalid username or password.');
@@ -96,7 +96,7 @@ app.get('/protected', (req, res) => {
     }
 
     try {
-        const decoded = jwt.verify(token, 'your_secret_key'); // Замініть на свій секретний ключ
+        const decoded = jwt.verify(token, process.env.SECRET_KEY);
         // Виконайте потрібні дії з валідним JWT токеном (наприклад, отримайте ID користувача та відобразіть захищені дані)
 
         res.send('Protected data');
